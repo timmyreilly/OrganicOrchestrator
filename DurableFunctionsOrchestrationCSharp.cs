@@ -25,7 +25,6 @@ namespace Company.Function
             var content2 = context.WaitForExternalEvent<string>("OrderLineItems");
             var content3 = context.WaitForExternalEvent<string>("ProductInformation");
 
-
             var something = await Task.WhenAll(content1, content2, content3);
 
 
