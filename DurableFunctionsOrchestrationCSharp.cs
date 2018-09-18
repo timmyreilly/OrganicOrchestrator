@@ -40,7 +40,7 @@ namespace Company.Function
         [FunctionName("Bundle")]
         public static string Bundle([ActivityTrigger] string prefix, ILogger log)
         {
-            log.LogInformation($"Saying hello to {prefix}.");
+            log.LogInformation($"*** \n \n *** Saying hello to {prefix}.");
             return $"Hello {prefix}!";
         }
 
@@ -86,52 +86,46 @@ namespace Company.Function
             string name,
             ILogger log)
         {
+
+            // receive a file: 
+            var prefixAndInstanceId = name.Split('-')[0]; 
+
+            var orchestrationFunctionProcessStatus = await starter.GetStatusAsync(prefixAndInstanceId);
+
+            var resultOfStarter = ""; 
+            if(orchestrationFunctionProcessStatus is null) {
+                log.LogInformation("***** \nCreating a new Durable Orchestration Function with InstanceId equal to: " + prefixAndInstanceId); 
+                resultOfStarter = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp", prefixAndInstanceId, prefixAndInstanceId);
+                orchestrationFunctionProcessStatus = await starter.GetStatusAsync(prefixAndInstanceId);
+            }
+
+
+            if(orchestrationFunctionProcessStatus.InstanceId == prefixAndInstanceId) {
+                log.LogInformation("knocked out of the park \n prefixAndInstanceId: " + prefixAndInstanceId + " orchestrationFunctionProcessStatus.InstanceId: " + orchestrationFunctionProcessStatus.InstanceId);
+            }
+
+
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
-            var prefix = name.Split('-')[0];
-            var fileName = name.Split('-')[1];
-            log.LogInformation("PREFIX: " + prefix);
+            log.LogInformation("INSTANCE ID...: " + prefixAndInstanceId);
 
-            var orchestratorProcessStatus = await starter.GetStatusAsync(prefix);
-            if (orchestratorProcessStatus != null)
+            if (name.Contains("OrderHeaderDetails"))
             {
-                log.LogInformation(" THERE IS A THING IN PROGRESS: PROCESS STATUS: " + orchestratorProcessStatus.ToString());
-            } else {
-                log.LogInformation("THERE IS NOTHING IN PROCESS: THIS IS WHAT WE HAVE FOR PROCESS STATUS: "); 
-            }
-
-            // Function input comes from the request content.
-            string instanceId = null;
-            if (orchestratorProcessStatus is null)
-            {
-                instanceId = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp", prefix, prefix);
-                log.LogInformation("INSTANCE ID: " + instanceId);
-            }
-            else
-            {
-                instanceId = prefix;
-            }
-            log.LogInformation("INSTANCE ID...: " + instanceId);
-
-
-
-            if (name.Contains("OrderHeaderDetail"))
-            {
-                log.LogInformation("OrderHeaderDetail going to orchestrator: " + name);
-                await starter.RaiseEventAsync(instanceId, "OrderHeaderDetail", name);
+                log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
             }
             else if (name.Contains("OrderLineItems"))
             {
                 log.LogInformation("OrderLineItems going to orchestrator: " + name);
-                await starter.RaiseEventAsync(instanceId, "OrderLineItems", name);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderLineItems", name);
             }
             else if (name.Contains("ProductInformation"))
             {
                 log.LogInformation("ProductInformation going to orchestrator: " + name);
-                await starter.RaiseEventAsync(instanceId, "ProductInformation", name);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "ProductInformation", name);
             }
 
 
-            log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
+            // log.LogInformation($"Started orchestration with ID = '{prefixAndInstanceId}'.");
         }
     }
 }
