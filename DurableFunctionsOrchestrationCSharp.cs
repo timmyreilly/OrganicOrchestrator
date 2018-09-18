@@ -42,9 +42,16 @@ namespace Company.Function
         }
 
         [FunctionName("Bundle")]
-        public static string Bundle([ActivityTrigger] string prefix, ILogger log)
+        public static string Bundle([ActivityTrigger] string[] fileContent, ILogger log)
         {
-            log.LogInformation($"*** \n \n *** Saying hello to {prefix}.");
+            log.LogInformation($"*** \n \n *** Our Three File: ");
+            var ohd = fileContent[0]; 
+            var oli = fileContent[1]; 
+            var pi = fileContent[2]; 
+
+            log.LogInformation("Ohd : " + ohd);  
+            log.LogInformation("oli : " + oli);  
+            log.LogInformation("pi : " + pi);  
 
             // Get all the files with this prefix: 
             // {prefix}-OrderHeaderDetails.csv
@@ -127,13 +134,10 @@ namespace Company.Function
 
             if (name.Contains("OrderHeaderDetails"))
             {
-                log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
 //                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
 
-                List<OrderHeaderDetailModel> details = File.ReadAllLines(myBlob).Skip(1).Select(v => OrderHeaderDetailModel.FromCsv(v)).ToList(); 
-                
-                
-                log.LogInformation(details.ToString()); 
+                // List<OrderHeaderDetailModel> details = File.ReadAllLines(myBlob).Skip(1).Select(v => OrderHeaderDetailModel.FromCsv(v)).ToList(); 
+                log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", myBlob);
             }
             else if (name.Contains("OrderLineItems"))
