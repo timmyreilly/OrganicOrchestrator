@@ -22,7 +22,7 @@ namespace Company.Function
             var content2 = context.WaitForExternalEvent<string>("OrderLineItems");
             var content3 = context.WaitForExternalEvent<string>("ProductInformation");
 
-            await Task.WhenAll(content1, content2, content3);
+            var something = await Task.WhenAll(content1, content2, content3);
 
 
             // Replace "hello" with the name of your Durable Activity Function.
@@ -32,7 +32,7 @@ namespace Company.Function
             // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
             // outputs.AddRange([fileAReceived, fileBReceived, fileCReceived]);  
 
-            await context.CallActivityAsync("Bundle", prefix);
+            await context.CallActivityAsync("Bundle", something);
 
             return prefix;
         }
@@ -81,7 +81,7 @@ namespace Company.Function
 
         [FunctionName("BlobTriggerCSharp")]
         public static async void Run(
-            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]Stream myBlob,
+            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]string myBlob,
             [OrchestrationClient]DurableOrchestrationClient starter,
             string name,
             ILogger log)
@@ -105,23 +105,28 @@ namespace Company.Function
             }
 
 
-            log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
+            log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob} Bytes");
             log.LogInformation("INSTANCE ID...: " + prefixAndInstanceId);
+
+            var stuffInBlob = myBlob; 
 
             if (name.Contains("OrderHeaderDetails"))
             {
+//                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
+
+                // List<OrderHeaderDetailModel> details = File.ReadAllLines(myBlob).Skip(1).Select(v => OrderHeaderDetailModel.FromCsv(v)).ToList(); 
                 log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
-                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", myBlob);
             }
             else if (name.Contains("OrderLineItems"))
             {
                 log.LogInformation("OrderLineItems going to orchestrator: " + name);
-                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderLineItems", name);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderLineItems", myBlob);
             }
             else if (name.Contains("ProductInformation"))
             {
                 log.LogInformation("ProductInformation going to orchestrator: " + name);
-                await starter.RaiseEventAsync(prefixAndInstanceId, "ProductInformation", name);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "ProductInformation", myBlob);
             }
 
 
