@@ -1,11 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage.Auth;
 using Newtonsoft.Json;
 
 namespace Company.Function
@@ -38,9 +41,27 @@ namespace Company.Function
         }
 
         [FunctionName("Bundle")]
-        public static string Bundle([ActivityTrigger] string prefix, ILogger log)
+        public static string Bundle([ActivityTrigger] string[] fileContent, ILogger log)
         {
-            log.LogInformation($"*** \n \n *** Saying hello to {prefix}.");
+            log.LogInformation($"*** \n \n *** Our Three File: ");
+            var ohd = fileContent[0]; 
+            var oli = fileContent[1]; 
+            var pi = fileContent[2]; 
+
+            log.LogInformation("Ohd : " + ohd);  
+            log.LogInformation("oli : " + oli);  
+            log.LogInformation("pi : " + pi);  
+
+            // Get all the files with this prefix: 
+            // {prefix}-OrderHeaderDetails.csv
+            // {prefix}-OrderLineItems.csv
+            // {prefix}-ProductInformation.csv 
+
+            // This function is being called because we have confirmed receipt of all files in the blob for a given prefix. Now grab all files with that prefix.
+            Environment.GetEnvironmentVariable("BlobAccountName", EnvironmentVariableTarget.Process);
+
+            var storageCredentials = new StorageCredentials("myAccountName", "myAccountKey");
+            
             return $"Hello {prefix}!";
         }
 
