@@ -16,14 +16,14 @@ namespace Company.Function
         public static async Task<string> RunOrchestrator(
             [OrchestrationTrigger] DurableOrchestrationContext context)
         {
-            string prefix = context.GetInput<string>(); 
+            string prefix = context.GetInput<string>();
 
-            var content1 = context.WaitForExternalEvent<string>("ReceivedPO");
-            var content2 = context.WaitForExternalEvent<string>("ReceivedHeader");
-            var content3 = context.WaitForExternalEvent<string>("ReceivedOrderDetails");
+            var content1 = context.WaitForExternalEvent<string>("OrderHeaderDetails");
+            var content2 = context.WaitForExternalEvent<string>("OrderLineItems");
+            var content3 = context.WaitForExternalEvent<string>("ProductInformation");
 
-            await Task.WhenAll(content1, content2, content3); 
-            
+            await Task.WhenAll(content1, content2, content3);
+
 
             // Replace "hello" with the name of your Durable Activity Function.
             // outputs.Add(await context.CallActivityAsync<string>("DurableFunctionsOrchestrationCSharp_Hello", "Tokyo"));
@@ -51,29 +51,87 @@ namespace Company.Function
             ILogger log)
         {
             // dynamic data = JsonConvert.DeserializeObject(req);
-            
-            var queryValues = req.RequestUri.ParseQueryString(); 
-            var prefix = queryValues["prefix"]; 
-            log.LogInformation(prefix); 
+
+            var queryValues = req.RequestUri.ParseQueryString();
+            var prefix = queryValues["prefix"];
+            log.LogInformation(prefix);
 
 
             var orchestratorProcessStatus = await starter.GetStatusAsync(prefix);
             // Function input comes from the request content.
-            string instanceId = null; 
-            if(orchestratorProcessStatus is null) {
+            string instanceId = null;
+            if (orchestratorProcessStatus is null)
+            {
                 instanceId = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp", prefix);
-            } else {
-                instanceId = prefix; 
+            }
+            else
+            {
+                instanceId = prefix;
             }
 
             await starter.RaiseEventAsync(instanceId, "ReceivedHeader", prefix);
             await starter.RaiseEventAsync(instanceId, "ReceivedOrderDetails", prefix);
-            await starter.RaiseEventAsync(instanceId, "ReceivedPO", prefix); 
+            await starter.RaiseEventAsync(instanceId, "ReceivedPO", prefix);
 
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
             return starter.CreateCheckStatusResponse(req, instanceId);
+        }
+
+        [FunctionName("BlobTriggerCSharp")]
+        public static async void Run(
+            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]Stream myBlob,
+            [OrchestrationClient]DurableOrchestrationClient starter,
+            string name,
+            ILogger log)
+        {
+            log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
+            var prefix = name.Split('-')[0];
+            var fileName = name.Split('-')[1];
+            log.LogInformation("PREFIX: " + prefix);
+
+            var orchestratorProcessStatus = await starter.GetStatusAsync(prefix);
+            if (orchestratorProcessStatus != null)
+            {
+                log.LogInformation(" THERE IS A THING IN PROGRESS: PROCESS STATUS: " + orchestratorProcessStatus.ToString());
+            } else {
+                log.LogInformation("THERE IS NOTHING IN PROCESS: THIS IS WHAT WE HAVE FOR PROCESS STATUS: "); 
+            }
+
+            // Function input comes from the request content.
+            string instanceId = null;
+            if (orchestratorProcessStatus is null)
+            {
+                instanceId = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp", prefix, prefix);
+                log.LogInformation("INSTANCE ID: " + instanceId);
+            }
+            else
+            {
+                instanceId = prefix;
+            }
+            log.LogInformation("INSTANCE ID...: " + instanceId);
+
+
+
+            if (name.Contains("OrderHeaderDetail"))
+            {
+                log.LogInformation("OrderHeaderDetail going to orchestrator: " + name);
+                await starter.RaiseEventAsync(instanceId, "OrderHeaderDetail", name);
+            }
+            else if (name.Contains("OrderLineItems"))
+            {
+                log.LogInformation("OrderLineItems going to orchestrator: " + name);
+                await starter.RaiseEventAsync(instanceId, "OrderLineItems", name);
+            }
+            else if (name.Contains("ProductInformation"))
+            {
+                log.LogInformation("ProductInformation going to orchestrator: " + name);
+                await starter.RaiseEventAsync(instanceId, "ProductInformation", name);
+            }
+
+
+            log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
         }
     }
 }
