@@ -11,6 +11,8 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Newtonsoft.Json;
+using Microsoft.Azure.Documents;
+
 
 namespace Company.Function
 {
@@ -37,7 +39,11 @@ namespace Company.Function
         }
 
         [FunctionName("Bundle")]
-        public static string Bundle([ActivityTrigger] List<string> fileContent, ILogger log)
+        public static async Task<string> Bundle([ActivityTrigger] List<string> fileContent, ILogger log,  
+        [CosmosDB(
+            databaseName: "ChallengeTwo",
+            collectionName: "EntryDB",
+            ConnectionStringSetting = "CosmosDBConnection")]IAsyncCollector<CosmosEntry> documentsToStore)
         {
             log.LogInformation($"*** \n \n *** Our Three File: ");
 
@@ -46,21 +52,6 @@ namespace Company.Function
             List<ProductInformationModel> pi = JsonConvert.DeserializeObject<List<ProductInformationModel>>(fileContent[2]);
 
             var prefix = fileContent[3];
-
-            foreach (var r in ohd)
-            {
-                log.LogInformation(r.ponumber);
-            }
-
-            foreach (var r in oli)
-            {
-                log.LogInformation(r.ponumber);
-            }
-
-            foreach (var r in pi)
-            {
-                log.LogInformation(r.productname);
-            }
 
             foreach (var entry in ohd)
             {
@@ -72,7 +63,7 @@ namespace Company.Function
                 cosmosEntry.locationaddress = entry.locationaddress;
                 cosmosEntry.locationpostcode = entry.locationpostcode;
                 cosmosEntry.totalcost = entry.totalcost;
-                cosmosEntry.totalcost = entry.totaltax;
+                cosmosEntry.totaltax = entry.totaltax;
 
                 cosmosEntry.orderitemlist = new List<OrderItem>();
                 var lineItem = oli.Where(x => x.ponumber == cosmosEntry.ponumber);
@@ -93,6 +84,7 @@ namespace Company.Function
                     cosmosEntry.orderitemlist.Add(item);
                 }
                 log.LogInformation(cosmosEntry.ToString());
+                await documentsToStore.AddAsync(cosmosEntry); 
                 // add cosmosEntry to cosmos
 
             }
