@@ -49,9 +49,9 @@ namespace Company.Function{
     }
 
     public class ProductInformationModel{
-        string productid{get;set;}
-        string productname{get;set;}
-        string productdescription{get;set;}
+        public string productid{get;set;}
+        public string productname{get;set;}
+        public string productdescription{get;set;}
 
         public static ProductInformationModel FromCsv(string csvLine) 
         {
@@ -65,7 +65,7 @@ namespace Company.Function{
     }
 
     public class CosmosEntry {
-        sbyte ponumber{get;set;}
+        string ponumber{get;set;}
         string locationid{get;set;}
         string locationname{get;set;}
         string locationaddress{get;set;}

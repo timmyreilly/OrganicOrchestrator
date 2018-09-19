@@ -28,9 +28,9 @@ namespace Company.Function
 
 
             var something = await Task.WhenAll(content1, content2, content3);
-            List<string> bundle = new List<string>(); 
-            bundle.AddRange(something); 
-            bundle.Add(prefix); 
+            List<string> bundle = new List<string>();
+            bundle.AddRange(something);
+            bundle.Add(prefix);
 
             await context.CallActivityAsync("Bundle", bundle);
 
@@ -41,18 +41,18 @@ namespace Company.Function
         public static string Bundle([ActivityTrigger] string[] fileContent, ILogger log)
         {
             log.LogInformation($"*** \n \n *** Our Three File: ");
-            var ohd = fileContent[0]; 
-            var oli = fileContent[1]; 
+            var ohd = fileContent[0];
+            var oli = fileContent[1];
             var pi = fileContent[2];
-            var prefix = fileContent[3];  
+            var prefix = fileContent[3];
 
-            log.LogInformation("ohd : " + ohd);  
-            log.LogInformation("oli : " + oli);  
-            log.LogInformation("pi : " + pi);  
-            log.LogInformation("bundle prefix: " + prefix); 
+            log.LogInformation("ohd : " + ohd);
+            log.LogInformation("oli : " + oli);
+            log.LogInformation("pi : " + pi);
+            log.LogInformation("bundle prefix: " + prefix);
 
 
-            
+
 
             // Get all the files with this prefix: 
             // {prefix}-OrderHeaderDetails.csv
@@ -63,7 +63,7 @@ namespace Company.Function
             Environment.GetEnvironmentVariable("BlobAccountName", EnvironmentVariableTarget.Process);
 
             var storageCredentials = new StorageCredentials("myAccountName", "myAccountKey");
-            
+
             return $"Hello {ohd}!";
         }
 
@@ -74,21 +74,36 @@ namespace Company.Function
             string name,
             ILogger log)
         {
-            if(name.Contains("OrderHeaderDetails")){
+            var csv = new CsvReader(myBlob);
+            if (name.Contains("OrderHeaderDetails"))
+            {
+                var ohd = csv.GetRecords<OrderHeaderDetailModel>();
 
-                // log.LogInformation(myBlob.ReadToEnd()); 
-                var csv = new CsvReader(myBlob);
-                var records = csv.GetRecords<OrderHeaderDetailModel>();
-                
+                foreach (var r in ohd)
+                {
+                    csv.Read();
+                    log.LogInformation(r.ponumber.ToString());
+                }
+            }
+            else if (name.Contains("OrderLineItems"))
+            {
+                var oli = csv.GetRecords<OrderLineItemModel>();
 
-                // log.LogInformation("\n ********RECORD: " + records.ToString()); 
-                foreach(var r in records) {
-                    log.LogInformation("wee");
+                foreach (var r in oli)
+                {
                     csv.Read(); 
                     log.LogInformation(r.ponumber.ToString()); 
+
                 }
+            } 
+            else if(name.Contains("ProductInformation"))
+            {
+                var pi = csv.GetRecords<ProductInformationModel>(); 
 
-
+                foreach (var r in pi) {
+                    csv.Read(); 
+                    log.LogInformation(r.productid.ToString()); 
+                }
             }
 
 
@@ -105,13 +120,14 @@ namespace Company.Function
         {
 
             // receive a file: 
-            var prefixAndInstanceId = name.Split('-')[0]; 
+            var prefixAndInstanceId = name.Split('-')[0];
 
             var orchestrationFunctionProcessStatus = await starter.GetStatusAsync(prefixAndInstanceId);
 
-            var resultOfStarter = ""; 
-            if(orchestrationFunctionProcessStatus is null) {
-                log.LogInformation("***** \nCreating a new Durable Orchestration Function with InstanceId equal to: " + prefixAndInstanceId); 
+            var resultOfStarter = "";
+            if (orchestrationFunctionProcessStatus is null)
+            {
+                log.LogInformation("***** \nCreating a new Durable Orchestration Function with InstanceId equal to: " + prefixAndInstanceId);
                 resultOfStarter = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp", prefixAndInstanceId, prefixAndInstanceId);
                 orchestrationFunctionProcessStatus = await starter.GetStatusAsync(prefixAndInstanceId);
             }
@@ -125,11 +141,11 @@ namespace Company.Function
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob} Bytes");
             // log.LogInformation("INSTANCE ID...: " + prefixAndInstanceId);
 
-            var stuffInBlob = myBlob; 
+            var stuffInBlob = myBlob;
 
             if (name.Contains("OrderHeaderDetails"))
             {
-//                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
+                //                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
 
                 // List<OrderHeaderDetailModel> details = File.ReadAllLines(myBlob).Skip(1).Select(v => OrderHeaderDetailModel.FromCsv(v)).ToList(); 
                 log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
@@ -150,6 +166,6 @@ namespace Company.Function
             // log.LogInformation($"Started orchestration with ID = '{prefixAndInstanceId}'.");
         }
 
-        
+
     }
 }
