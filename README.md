@@ -1,3 +1,6 @@
+Don't forget your dependencies: 
+
+'''
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.6.1" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.0-rc1" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.1-beta7" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.21" />
     <PackageReference Include="CsvHelper" Version="7.1.1" />
   </ItemGroup>
@@ -20,3 +22,4 @@
     </None>
   </ItemGroup>
 </Project>
+'''

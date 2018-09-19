@@ -1,12 +1,15 @@
 
 using System;
+using System.Collections.Generic;
 
 namespace Company.Function{
-    public class OrderLineItemModel{
-        string ponumber{get;set;}
-        string productid{get;set;}
-        int quantity{get;set;}
-        decimal totalcost{get;set;}
+    public class OrderLineItemModel : System.Object{
+        public string ponumber{get;set;}
+        public string productid{get;set;}
+        public int quantity{get;set;}
+        public decimal unitcost{get;set;}
+        public decimal totalcost{get;set;}
+        public decimal totaltax{get;set;}
 
 
         public static OrderLineItemModel FromCsv(string csvLine)
@@ -21,36 +24,37 @@ namespace Company.Function{
         }
     }
 
-    public class OrderHeaderDetailModel{
-        string ponumber {get; set;}
-        string datetime{get;set;}
-        string locationid{get;set;}
-        string locationname{get;set;}
-        string locationaddress{get;set;}
-        int locationpostcode{get;set;}
-        decimal totalcost{get;set;}
-        decimal totaltax{get;set;}
+    // ponumber,datetime,locationid,locationname,locationaddress,locationpostcode,totalcost,totaltax
+    public class OrderHeaderDetailModel : System.Object{
+        public string ponumber {get; set;}
+        public string datetime{get;set;}
+        public string locationid{get;set;}
+        public string locationname{get;set;}
+        public string locationaddress{get;set;}
+        public int locationpostcode{get;set;}
+        public decimal totalcost{get;set;}
+        public decimal totaltax{get;set;}
 
-        public static OrderHeaderDetailModel FromCsv(string csvLine)
-        {
-            string[] values = csvLine.Split(','); 
-            OrderHeaderDetailModel orderHeaderDetailModel = new OrderHeaderDetailModel();
-            orderHeaderDetailModel.ponumber = Convert.ToString(values[0]); 
-            orderHeaderDetailModel.datetime = Convert.ToString(values[1]); 
-            orderHeaderDetailModel.locationid = Convert.ToString(values[2]); 
-            orderHeaderDetailModel.locationname = Convert.ToString(values[3]); 
-            orderHeaderDetailModel.locationaddress = Convert.ToString(values[4]); 
-            orderHeaderDetailModel.locationpostcode = Convert.ToInt32(values[5]); 
-            orderHeaderDetailModel.totalcost = Convert.ToDecimal(values[6]); 
-            orderHeaderDetailModel.totaltax = Convert.ToDecimal(values[7]); 
-            return orderHeaderDetailModel; 
-        }
+        // public static OrderHeaderDetailModel FromCsv(string csvLine)
+        // {
+        //     string[] values = csvLine.Split(','); 
+        //     OrderHeaderDetailModel orderHeaderDetailModel = new OrderHeaderDetailModel();
+        //     orderHeaderDetailModel.ponumber = Convert.ToString(values[0]); 
+        //     orderHeaderDetailModel.datetime = Convert.ToString(values[1]); 
+        //     orderHeaderDetailModel.locationid = Convert.ToString(values[2]); 
+        //     orderHeaderDetailModel.locationname = Convert.ToString(values[3]); 
+        //     orderHeaderDetailModel.locationaddress = Convert.ToString(values[4]); 
+        //     orderHeaderDetailModel.locationpostcode = Convert.ToInt32(values[5]); 
+        //     orderHeaderDetailModel.totalcost = Convert.ToDecimal(values[6]); 
+        //     orderHeaderDetailModel.totaltax = Convert.ToDecimal(values[7]); 
+        //     return orderHeaderDetailModel; 
+        // }
     }
 
-    public class ProductInformationModel{
-        string productid{get;set;}
-        string productname{get;set;}
-        string productdescription{get;set;}
+    public class ProductInformationModel : System.Object{
+        public string productid{get;set;}
+        public string productname{get;set;}
+        public string productdescription{get;set;}
 
         public static ProductInformationModel FromCsv(string csvLine) 
         {
@@ -63,16 +67,22 @@ namespace Company.Function{
         }
     }
 
-    public class CosmosEntry {
-        sbyte ponumber{get;set;}
-        string locationid{get;set;}
-        string locationname{get;set;}
-        string locationaddress{get;set;}
-        int locationpostcode{get;set;}
-        decimal totalcost{get;set;}
-        decimal totaltax{get;set;}
+    public class OrderItem : OrderLineItemModel {
+        public string productdescription{get;set;} 
+        public string productname{get;set;}
+    }
 
-        OrderLineItemModel[] orderLineItems; 
+    public class CosmosEntry {
+        public string prefix{get;set;}
+        public string ponumber{get;set;}
+        public string locationid{get;set;}
+        public string locationname{get;set;}
+        public string locationaddress{get;set;}
+        public int locationpostcode{get;set;}
+        public decimal totalcost{get;set;}
+        public decimal totaltax{get;set;}
+
+        public List<OrderItem> orderitemlist; 
     }
 
 
