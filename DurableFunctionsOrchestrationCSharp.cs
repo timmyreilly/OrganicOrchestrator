@@ -22,46 +22,80 @@ namespace Company.Function
         {
             string prefix = context.GetInput<string>();
 
-            var content1 = context.WaitForExternalEvent<TextReader>("OrderHeaderDetails");
-            var content2 = context.WaitForExternalEvent<TextReader>("OrderLineItems");
-            var content3 = context.WaitForExternalEvent<TextReader>("ProductInformation");
+            var content1 = context.WaitForExternalEvent<string>("OrderHeaderDetails");
+            var content2 = context.WaitForExternalEvent<string>("OrderLineItems");
+            var content3 = context.WaitForExternalEvent<string>("ProductInformation");
 
             var something = await Task.WhenAll(content1, content2, content3);
 
-            
-            await context.CallActivityAsync("Bundle", something);
+            var bundle = something.ToList();
+            bundle.Add(prefix);
+
+            await context.CallActivityAsync("Bundle", bundle);
 
             return prefix;
         }
 
         [FunctionName("Bundle")]
-        public static string Bundle([ActivityTrigger] TextReader[] fileContent, ILogger log)
+        public static string Bundle([ActivityTrigger] List<string> fileContent, ILogger log)
         {
             log.LogInformation($"*** \n \n *** Our Three File: ");
-            foreach(var r  in fileContent) {
-                log.LogInformation(r.ToString()); 
+
+            List<OrderHeaderDetailModel> ohd = JsonConvert.DeserializeObject<List<OrderHeaderDetailModel>>(fileContent[0]);
+            List<OrderLineItemModel> oli = JsonConvert.DeserializeObject<List<OrderLineItemModel>>(fileContent[1]);
+            List<ProductInformationModel> pi = JsonConvert.DeserializeObject<List<ProductInformationModel>>(fileContent[2]);
+
+            var prefix = fileContent[3];
+
+            foreach (var r in ohd)
+            {
+                log.LogInformation(r.ponumber);
             }
 
-
-
-            var ohdcsv = new CsvReader(fileContent[0]);
-            var ohd = ohdcsv.GetRecords<OrderHeaderDetailModel>(); 
-            foreach(var r in ohd) {
-                log.LogInformation(r.ponumber); 
+            foreach (var r in oli)
+            {
+                log.LogInformation(r.ponumber);
             }
 
-            // var ohd = fileContent[0];
-            // var oli = fileContent[1];
-            // var pi = fileContent[2];
-            // // var prefix = fileContent[3];
-            
-            
+            foreach (var r in pi)
+            {
+                log.LogInformation(r.productname);
+            }
 
-            // log.LogInformation("ohd : " + ohd);
-            // log.LogInformation("oli : " + oli);
-            // log.LogInformation("pi : " + pi);
-            // log.LogInformation("bundle prefix: " + prefix);
+            foreach (var entry in ohd)
+            {
+                CosmosEntry cosmosEntry = new CosmosEntry();
+                cosmosEntry.prefix = prefix;
+                cosmosEntry.ponumber = entry.ponumber;
+                cosmosEntry.locationid = entry.locationid;
+                cosmosEntry.locationname = entry.locationname;
+                cosmosEntry.locationaddress = entry.locationaddress;
+                cosmosEntry.locationpostcode = entry.locationpostcode;
+                cosmosEntry.totalcost = entry.totalcost;
+                cosmosEntry.totalcost = entry.totaltax;
 
+                cosmosEntry.orderitemlist = new List<OrderItem>();
+                var lineItem = oli.Where(x => x.ponumber == cosmosEntry.ponumber);
+                foreach (var l in lineItem)
+                {
+                    var details = pi.Where(x => x.productid == l.productid).First();
+
+                    var item = new OrderItem();
+                    item.ponumber = l.ponumber; 
+                    item.productid = l.productid;
+                    item.productname = details.productname;
+                    item.quantity = l.quantity;
+                    item.unitcost = l.unitcost;
+                    item.totalcost = l.totalcost;
+                    item.totaltax = l.totaltax;
+                    item.productdescription = details.productdescription;
+
+                    cosmosEntry.orderitemlist.Add(item);
+                }
+                log.LogInformation(cosmosEntry.ToString());
+                // add cosmosEntry to cosmos
+
+            }
 
 
 
@@ -71,13 +105,13 @@ namespace Company.Function
             // {prefix}-ProductInformation.csv 
 
             // This function is being called because we have confirmed receipt of all files in the blob for a given prefix. Now grab all files with that prefix.
-            Environment.GetEnvironmentVariable("BlobAccountName", EnvironmentVariableTarget.Process);
+            // Environment.GetEnvironmentVariable("BlobAccountName", EnvironmentVariableTarget.Process);
 
-            var storageCredentials = new StorageCredentials("myAccountName", "myAccountKey");
+            // var storageCredentials = new StorageCredentials("myAccountName", "myAccountKey");
 
-            return $"Hello {ohd}!";
+            return $"Hello {fileContent[3]}!";
         }
-                        
+
         [Disable]
         [FunctionName("BlobTriggerAgain")]
         public static void Run(
@@ -153,21 +187,28 @@ namespace Company.Function
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n ");
             // log.LogInformation("INSTANCE ID...: " + prefixAndInstanceId);
 
+            var csv = new CsvReader(myBlob);
 
             if (name.Contains("OrderHeaderDetails"))
             {
+                var ohd = csv.GetRecords<OrderHeaderDetailModel>();
+                string json = JsonConvert.SerializeObject(ohd);
                 log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
-                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", myBlob);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", json);
             }
             else if (name.Contains("OrderLineItems"))
             {
+                var oli = csv.GetRecords<OrderLineItemModel>();
+                string json = JsonConvert.SerializeObject(oli);
                 log.LogInformation("OrderLineItems going to orchestrator: " + name);
-                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderLineItems", myBlob);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "OrderLineItems", json);
             }
             else if (name.Contains("ProductInformation"))
             {
+                var pi = csv.GetRecords<ProductInformationModel>();
+                string json = JsonConvert.SerializeObject(pi);
                 log.LogInformation("ProductInformation going to orchestrator: " + name);
-                await starter.RaiseEventAsync(prefixAndInstanceId, "ProductInformation", myBlob);
+                await starter.RaiseEventAsync(prefixAndInstanceId, "ProductInformation", json);
             }
 
 
