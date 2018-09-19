@@ -1,3 +1,6 @@
+Don't forget your dependencies: 
+
+'''
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -19,3 +22,4 @@
     </None>
   </ItemGroup>
 </Project>
+'''

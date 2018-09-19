@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CsvHelper;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
@@ -24,6 +25,7 @@ namespace Company.Function
             var content1 = context.WaitForExternalEvent<string>("OrderHeaderDetails");
             var content2 = context.WaitForExternalEvent<string>("OrderLineItems");
             var content3 = context.WaitForExternalEvent<string>("ProductInformation");
+
 
             var something = await Task.WhenAll(content1, content2, content3);
             List<string> bundle = new List<string>(); 
@@ -49,6 +51,9 @@ namespace Company.Function
             log.LogInformation("pi : " + pi);  
             log.LogInformation("bundle prefix: " + prefix); 
 
+
+            
+
             // Get all the files with this prefix: 
             // {prefix}-OrderHeaderDetails.csv
             // {prefix}-OrderLineItems.csv
@@ -62,43 +67,37 @@ namespace Company.Function
             return $"Hello {ohd}!";
         }
 
-        [FunctionName("DurableFunctionsOrchestrationCSharp_HttpStart")]
-        public static async Task<HttpResponseMessage> HttpStart(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")]HttpRequestMessage req,
+        [FunctionName("BlobTriggerAgain")]
+        public static void Run(
+            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]TextReader myBlob,
             [OrchestrationClient]DurableOrchestrationClient starter,
+            string name,
             ILogger log)
         {
-            // dynamic data = JsonConvert.DeserializeObject(req);
+            if(name.Contains("OrderHeaderDetails")){
 
-            var queryValues = req.RequestUri.ParseQueryString();
-            var prefix = queryValues["prefix"];
-            // log.LogInformation(prefix);
+                // log.LogInformation(myBlob.ReadToEnd()); 
+                var csv = new CsvReader(myBlob);
+                var records = csv.GetRecords<OrderHeaderDetailModel>();
+                
+
+                // log.LogInformation("\n ********RECORD: " + records.ToString()); 
+                foreach(var r in records) {
+                    log.LogInformation("wee");
+                    csv.Read(); 
+                    log.LogInformation(r.ponumber.ToString()); 
+                }
 
 
-            var orchestratorProcessStatus = await starter.GetStatusAsync(prefix);
-            // Function input comes from the request content.
-            string instanceId = null;
-            if (orchestratorProcessStatus is null)
-            {
-                instanceId = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp", prefix);
-            }
-            else
-            {
-                instanceId = prefix;
             }
 
-            await starter.RaiseEventAsync(instanceId, "ReceivedHeader", prefix);
-            await starter.RaiseEventAsync(instanceId, "ReceivedOrderDetails", prefix);
-            await starter.RaiseEventAsync(instanceId, "ReceivedPO", prefix);
 
 
-            log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
-
-            return starter.CreateCheckStatusResponse(req, instanceId);
         }
-
+        [Disable]
         [FunctionName("BlobTriggerCSharp")]
-        public static async void Run(
+        public static async void Rune(
+
             [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]string myBlob,
             [OrchestrationClient]DurableOrchestrationClient starter,
             string name,
@@ -150,5 +149,7 @@ namespace Company.Function
 
             // log.LogInformation($"Started orchestration with ID = '{prefixAndInstanceId}'.");
         }
+
+        
     }
 }
