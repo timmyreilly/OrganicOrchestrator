@@ -39,11 +39,15 @@ namespace Company.Function
         }
 
         [FunctionName("Bundle")]
-        public static async Task<string> Bundle([ActivityTrigger] List<string> fileContent, ILogger log,  
+        public static async Task<string> Bundle([ActivityTrigger] List<string> fileContent,   
         [CosmosDB(
             databaseName: "ChallengeTwo",
             collectionName: "EntryDB",
-            ConnectionStringSetting = "CosmosDBConnection")]IAsyncCollector<CosmosEntry> documentsToStore)
+            ConnectionStringSetting = "CosmosDBConnection"
+            
+            )]
+            IAsyncCollector<CosmosEntry> documentsToStore,
+            ILogger log)
         {
             log.LogInformation($"*** \n \n *** Our Three File: ");
 
