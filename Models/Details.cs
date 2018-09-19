@@ -2,7 +2,7 @@
 using System;
 
 namespace Company.Function{
-    public class OrderLineItemModel{
+    public class OrderLineItemModel : System.Object{
         public string ponumber{get;set;}
         public string productid{get;set;}
         public int quantity{get;set;}
@@ -22,7 +22,7 @@ namespace Company.Function{
     }
 
     // ponumber,datetime,locationid,locationname,locationaddress,locationpostcode,totalcost,totaltax
-    public class OrderHeaderDetailModel{
+    public class OrderHeaderDetailModel : System.Object{
         public string ponumber {get; set;}
         public string datetime{get;set;}
         public string locationid{get;set;}
@@ -48,7 +48,7 @@ namespace Company.Function{
         // }
     }
 
-    public class ProductInformationModel{
+    public class ProductInformationModel : System.Object{
         public string productid{get;set;}
         public string productname{get;set;}
         public string productdescription{get;set;}

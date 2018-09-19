@@ -22,34 +22,45 @@ namespace Company.Function
         {
             string prefix = context.GetInput<string>();
 
-            var content1 = context.WaitForExternalEvent<string>("OrderHeaderDetails");
-            var content2 = context.WaitForExternalEvent<string>("OrderLineItems");
-            var content3 = context.WaitForExternalEvent<string>("ProductInformation");
-
+            var content1 = context.WaitForExternalEvent<TextReader>("OrderHeaderDetails");
+            var content2 = context.WaitForExternalEvent<TextReader>("OrderLineItems");
+            var content3 = context.WaitForExternalEvent<TextReader>("ProductInformation");
 
             var something = await Task.WhenAll(content1, content2, content3);
-            List<string> bundle = new List<string>();
-            bundle.AddRange(something);
-            bundle.Add(prefix);
 
-            await context.CallActivityAsync("Bundle", bundle);
+            
+            await context.CallActivityAsync("Bundle", something);
 
             return prefix;
         }
 
         [FunctionName("Bundle")]
-        public static string Bundle([ActivityTrigger] string[] fileContent, ILogger log)
+        public static string Bundle([ActivityTrigger] TextReader[] fileContent, ILogger log)
         {
             log.LogInformation($"*** \n \n *** Our Three File: ");
-            var ohd = fileContent[0];
-            var oli = fileContent[1];
-            var pi = fileContent[2];
-            var prefix = fileContent[3];
+            foreach(var r  in fileContent) {
+                log.LogInformation(r.ToString()); 
+            }
 
-            log.LogInformation("ohd : " + ohd);
-            log.LogInformation("oli : " + oli);
-            log.LogInformation("pi : " + pi);
-            log.LogInformation("bundle prefix: " + prefix);
+
+
+            var ohdcsv = new CsvReader(fileContent[0]);
+            var ohd = ohdcsv.GetRecords<OrderHeaderDetailModel>(); 
+            foreach(var r in ohd) {
+                log.LogInformation(r.ponumber); 
+            }
+
+            // var ohd = fileContent[0];
+            // var oli = fileContent[1];
+            // var pi = fileContent[2];
+            // // var prefix = fileContent[3];
+            
+            
+
+            // log.LogInformation("ohd : " + ohd);
+            // log.LogInformation("oli : " + oli);
+            // log.LogInformation("pi : " + pi);
+            // log.LogInformation("bundle prefix: " + prefix);
 
 
 
@@ -66,7 +77,8 @@ namespace Company.Function
 
             return $"Hello {ohd}!";
         }
-
+                        
+        [Disable]
         [FunctionName("BlobTriggerAgain")]
         public static void Run(
             [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]TextReader myBlob,
@@ -91,29 +103,30 @@ namespace Company.Function
 
                 foreach (var r in oli)
                 {
-                    csv.Read(); 
-                    log.LogInformation(r.ponumber.ToString()); 
+                    csv.Read();
+                    log.LogInformation(r.ponumber.ToString());
 
                 }
-            } 
-            else if(name.Contains("ProductInformation"))
+            }
+            else if (name.Contains("ProductInformation"))
             {
-                var pi = csv.GetRecords<ProductInformationModel>(); 
+                var pi = csv.GetRecords<ProductInformationModel>();
 
-                foreach (var r in pi) {
-                    csv.Read(); 
-                    log.LogInformation(r.productid.ToString()); 
+                foreach (var r in pi)
+                {
+                    csv.Read();
+                    log.LogInformation(r.productid.ToString());
                 }
             }
 
 
 
         }
-        [Disable]
+
         [FunctionName("BlobTriggerCSharp")]
         public static async void Rune(
 
-            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]string myBlob,
+            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]TextReader myBlob,
             [OrchestrationClient]DurableOrchestrationClient starter,
             string name,
             ILogger log)
@@ -137,17 +150,12 @@ namespace Company.Function
             //     log.LogInformation("knocked out of the park \n prefixAndInstanceId: " + prefixAndInstanceId + " orchestrationFunctionProcessStatus.InstanceId: " + orchestrationFunctionProcessStatus.InstanceId);
             // }
 
-
-            log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob} Bytes");
+            log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n ");
             // log.LogInformation("INSTANCE ID...: " + prefixAndInstanceId);
 
-            var stuffInBlob = myBlob;
 
             if (name.Contains("OrderHeaderDetails"))
             {
-                //                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", name);
-
-                // List<OrderHeaderDetailModel> details = File.ReadAllLines(myBlob).Skip(1).Select(v => OrderHeaderDetailModel.FromCsv(v)).ToList(); 
                 log.LogInformation("OrderHeaderDetails going to orchestrator: " + name);
                 await starter.RaiseEventAsync(prefixAndInstanceId, "OrderHeaderDetails", myBlob);
             }
