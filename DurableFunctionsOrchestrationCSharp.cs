@@ -112,7 +112,7 @@ namespace Company.Function
         [Disable]
         [FunctionName("BlobTriggerAgain")]
         public static void Run(
-            [BlobTrigger("dumbdumbcontainerone/{name}", Connection = "dumbdumbstorage_STORAGE")]TextReader myBlob,
+            [BlobTrigger("dumbdumbcontainertwo/{name}", Connection = "dumbdumbstorage_STORAGE")]TextReader myBlob,
             [OrchestrationClient]DurableOrchestrationClient starter,
             string name,
             ILogger log)
