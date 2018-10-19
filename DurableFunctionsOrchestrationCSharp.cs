@@ -41,8 +41,8 @@ namespace Company.Function
         [FunctionName("Bundle")]
         public static async Task<string> Bundle([ActivityTrigger] List<string> fileContent,   
         [CosmosDB(
-            databaseName: "ChallengeTwo",
-            collectionName: "EntryDB",
+            databaseName: "Challenge7",
+            collectionName: "OrderDetails",
             ConnectionStringSetting = "CosmosDBConnection"
             
             )]
