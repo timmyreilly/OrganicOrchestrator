@@ -43,7 +43,8 @@ namespace Company.Function
         [CosmosDB(
             databaseName: "Challenge7",
             collectionName: "OrderDetails",
-            ConnectionStringSetting = "CosmosDBConnection"
+            ConnectionStringSetting = "CosmosDBConnection",
+            CreateIfNotExists = true
             
             )]
             IAsyncCollector<CosmosEntry> documentsToStore,
