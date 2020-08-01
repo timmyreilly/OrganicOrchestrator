@@ -109,51 +109,6 @@ namespace Company.Function
             return $"Hello {fileContent[3]}!";
         }
 
-        [Disable]
-        [FunctionName("BlobTriggerAgain")]
-        public static void Run(
-            [BlobTrigger("dumbdumbcontainertwo/{name}", Connection = "dumbdumbstorage_STORAGE")]TextReader myBlob,
-            [OrchestrationClient]DurableOrchestrationClient starter,
-            string name,
-            ILogger log)
-        {
-            var csv = new CsvReader(myBlob);
-            if (name.Contains("OrderHeaderDetails"))
-            {
-                var ohd = csv.GetRecords<OrderHeaderDetailModel>();
-
-                foreach (var r in ohd)
-                {
-                    csv.Read();
-                    log.LogInformation(r.ponumber.ToString());
-                }
-            }
-            else if (name.Contains("OrderLineItems"))
-            {
-                var oli = csv.GetRecords<OrderLineItemModel>();
-
-                foreach (var r in oli)
-                {
-                    csv.Read();
-                    log.LogInformation(r.ponumber.ToString());
-
-                }
-            }
-            else if (name.Contains("ProductInformation"))
-            {
-                var pi = csv.GetRecords<ProductInformationModel>();
-
-                foreach (var r in pi)
-                {
-                    csv.Read();
-                    log.LogInformation(r.productid.ToString());
-                }
-            }
-
-
-
-        }
-
         [FunctionName("BlobTriggerCSharp")]
         public static async void Rune(
 
